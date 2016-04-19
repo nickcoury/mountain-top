@@ -1,0 +1,9 @@
+RecentActivitiesIntent list
+RecentActivitiesIntent list recent
+RecentActivitiesIntent list recent activities
+RecentActivitiesIntent list recent runs
+RecentActivitiesIntent list recent rides
+
+ActivityOnDateIntent list activities on {Date}
+ActivityOnDateIntent list runs on {Date}
+ActivityOnDateIntent list rides on {Date}

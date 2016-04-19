@@ -1,0 +1,35 @@
+{
+  "intents": [
+    {
+      "intent": "RecentActivitiesIntent",
+      "slots": [
+        {
+          "name": "Type",
+          "type": "LIST_OF_ACTIVITY_TYPES"
+        }
+      ]
+    },
+    {
+      "intent": "ActivityOnDateIntent",
+      "slots": [
+        {
+          "name": "Type",
+          "type": "LIST_OF_ACTIVITY_TYPES"
+        },
+        {
+          "name": "Date",
+          "type": "AMAZON.DATE"
+        }
+      ]
+    },
+    {
+      "intent": "AMAZON.HelpIntent"
+    },
+    {
+      "intent": "AMAZON.StopIntent"
+    },
+    {
+      "intent": "AMAZON.CancelIntent"
+    }
+  ]
+}
