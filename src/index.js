@@ -1,9 +1,10 @@
+var strava = require('strava-v3');
 var alexa = require('alexa-app');
 var app = new alexa.app('strava');
 
 app.launch(function(request,response) {
     response.linkAccount();
-    response.say('Welcome to the Strava app. Please link your account');
+    response.say('Welcome to the Strava app.');
 });
 
 app.intent('recent',

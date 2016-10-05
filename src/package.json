@@ -1,0 +1,8 @@
+{
+  "name": "strava-alexa",
+  "version": "0.0.1",
+  "dependencies": {
+    "alexa-app": "^2.3.4",
+    "strava-v3": "^1.12.1"
+  }
+}
