@@ -3,6 +3,7 @@ var alexa = require('alexa-app');
 var app = new alexa.app('strava');
 
 app.launch(function(request,response) {
+    console.log(JSON.stringify(request));
     response.linkAccount();
     response.say('Welcome to the Strava app.');
 });
