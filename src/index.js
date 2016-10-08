@@ -1,14 +1,32 @@
-var strava = require('strava-v3');
+var _ = require('lodash');
 var alexa = require('alexa-app');
+var Promise = require("bluebird");
+var strava = require('strava-v3');
+
+_(strava).forEach(Promise.promisifyAll);
 var app = new alexa.app('strava');
+var accessToken;
 
 console.log('Modules loaded');
 
+// Validate request
+// If initialization fails and returns false, caller should return true
+// to avoid running async executions.
+function init(request) {
+    accessToken = request.sessionDetails.accessToken;
+    if (!accessToken) {
+        response.linkAccount();
+        response.say('Please link your account in the Alexa app.').say();
+        return false;
+    }
+    return true;
+}
+
 app.launch(function(request,response) {
     console.log('app.launch');
-    console.log(JSON.stringify(request));
-    response.linkAccount();
-    response.say('Welcome to the Strava app.');
+    if (!init(request)) return true;
+
+    response.say('Welcome to the Strava app.').say();
 });
 
 app.intent('SummaryIntent',
@@ -18,16 +36,45 @@ app.intent('SummaryIntent',
             '{please |}give me my summary'
         ]
     },
-    function(request,response) {
+    function(request, response) {
+        if (!init(request)) return true;
+
         console.log('SummaryIntent');
-        strava.activities.get({}, function(err, result) {
-           console.log('Summary intent');
-           console.log(JSON.stringify(result));
+        var text = '';
+
+        strava.athlete.getAsync({
+            access_token: accessToken
+        }).then(function (athlete) {
+            text += 'Welcome ' + athlete.firstname + ' ' + athlete.lastname + '. Here is your Straava summary. ';
+
+            return strava.activities.listFriendsAsync({access_token: accessToken});
+        }).then(function (friendActivities) {
+            text += 'Found ' + friendActivities.length + ' friend activities. ';
+
+            _(friendActivities)
+                .take(20)
+                .forEach(function(activity) {
+               var friendSumary = [
+                   activity.athlete.firstname + ' ' + activity.athlete.lastname + ' posted ' + activity.name + '. ',
+                   activity.type + ' of ' + Math.round(activity.distance * 0.000621371192, 2) + ' miles with ',
+                   Math.round(activity.total_elevation_gain * 3.2808399, 0)  + ' feet of elevation gain. ',
+                   activity.achievement_count === 0 ? '' : activity.athlete.firstname + ' earned ' + activity.achievement_count + ' achievements. '
+               ].join('');
+
+               text += friendSumary;
+            });
+
+            return true;
+        }).then(function () {
+            console.log(text);
+            response.say(text).send();
+        }).catch(function (err) {
+            console.log('Summary Intent Error');
+            console.log(JSON.stringify(err));
+            response.say('There was an error. Please try again.').send();
         });
 
-        var summary = 'Here is your summary';
-
-        response.say(summary);
+        return false;
     }
 );
 

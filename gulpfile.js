@@ -18,7 +18,7 @@ var opts = {
 };
 
 gulp.task('lambda', function() {
-    return gulp.src(['src/**', '!src/package.json'])
+    return gulp.src(['src/**'])
         .pipe(zip('archive.zip'))
         //.pipe(lambda(lambda_params, opts))
         .pipe(lambda(lambda_params.FunctionName, opts))
