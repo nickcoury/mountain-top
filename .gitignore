@@ -3,3 +3,4 @@ archive.zip
 node_modules/
 
 src/data/strava_config
+dist/

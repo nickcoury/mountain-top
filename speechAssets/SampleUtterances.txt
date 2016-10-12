@@ -1,5 +1,0 @@
-RecentActivitiesIntent list
-RecentActivitiesIntent list recent
-RecentActivitiesIntent list recent {Type}
-
-ActivityOnDateIntent list {Type} on {Date}

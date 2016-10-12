@@ -1,5 +1,6 @@
 var _ = require('lodash');
 var alexa = require('alexa-app');
+var alexaRouter = require('./alexa-router');
 var Promise = require("bluebird");
 var strava = require('strava-v3');
 
@@ -7,12 +8,32 @@ _(strava).forEach(Promise.promisifyAll);
 var app = new alexa.app('strava');
 var accessToken;
 
+app = alexaRouter.addRouter(app);
+
 console.log('Modules loaded');
+
+app.routes([
+    {
+        path: '/summary',
+        intents: {
+            SummaryIntent: summaryHandlerSummaryIntent
+        }
+    },
+    {
+        path: '/athletes/me'
+    },
+    {
+        path: '/athletes'
+    }
+], {
+    before: init,
+    after: null
+});
 
 // Validate request
 // If initialization fails and returns false, caller should return true
 // to avoid running async executions.
-function init(request) {
+function init(request, response) {
     accessToken = request.sessionDetails.accessToken;
     if (!accessToken) {
         response.linkAccount();
@@ -26,7 +47,7 @@ app.launch(function(request,response) {
     console.log('app.launch');
     if (!init(request)) return true;
 
-    response.say('Welcome to the Strava app.').say();
+    response.say('Welcome to the Stravalexa app.').say();
 });
 
 app.intent('SummaryIntent',
@@ -95,6 +116,10 @@ app.intent('RecentActivities',
 // Connect to lambda
 exports.handler = app.lambda();
 exports.alexa = app;
+
+function summaryHandlerSummaryIntent(args, vars) {
+
+}
 
 /*
 

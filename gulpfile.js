@@ -22,5 +22,5 @@ gulp.task('lambda', function() {
         .pipe(zip('archive.zip'))
         //.pipe(lambda(lambda_params, opts))
         .pipe(lambda(lambda_params.FunctionName, opts))
-        .pipe(gulp.dest('.'));
+        .pipe(gulp.dest('dist/'));
 });
