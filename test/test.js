@@ -1,5 +1,7 @@
 var lambda = require('../src/index.js');
 
+var intent = process.argv[2];
+
 var event = {
     "session": {
         "sessionId": "SessionId.11111111-2222-3333-4444-555555555555",
@@ -19,7 +21,7 @@ var event = {
         "locale": "en-US",
         "timestamp": "2016-10-06T22:18:18Z",
         "intent": {
-            "name": "SummaryIntent",
+            "name": intent,
             "slots": {
                 "number": {
                     "name": "number"
