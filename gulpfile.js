@@ -9,7 +9,7 @@ var zip    = require('gulp-zip');
  * require the name of the function (see task below).
  */
 var lambda_params = {
-    FunctionName: 'strava-alexa',
+    FunctionName: 'stravalexa',
     Role: '[YOUR LAMBDA EXEC ROLE HERE]'
 };
 

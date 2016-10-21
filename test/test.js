@@ -1,6 +1,11 @@
 var lambda = require('../src/index.js');
+var fs = require('fs');
+var path = require('path');
 
 var intent = process.argv[2];
+var configFile = fs.readFileSync(__dirname + '/../src/data/strava_config', 'utf8');
+var config = JSON.parse(configFile);
+
 
 var event = {
     "session": {
@@ -11,7 +16,7 @@ var event = {
         "attributes": {},
         "user": {
             "userId": "amzn1.ask.account.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-            "accessToken": "0000000000000000000000000000000000000000"
+            "accessToken": config.access_token
         },
         "new": true
     },

@@ -1,6 +1,8 @@
 {
-  "name": "strava-alexa",
-  "version": "0.0.1",
+  "name": "stravalexa",
+  "version": "0.0.2",
+  "license": "LICENSE.md",
+  "readme": "README.md",
   "scripts": {
     "preinstall": "cd src && npm i && cd .."
   },

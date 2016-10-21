@@ -4,3 +4,7 @@ node_modules/
 
 src/data/strava_config
 dist/
+
+.DS_Store
+
+src/data/strava_config
