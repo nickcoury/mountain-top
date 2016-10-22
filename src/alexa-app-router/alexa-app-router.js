@@ -1,12 +1,7 @@
 var router = {};
 
-router.addRouter = function(app) {
+router.addRouter = function(app, config, intents, routes) {
     if (!app) return;
-
-    app.defaultRoute = '/';
-
-    app.$$routes = app.routes;
-    app.routes = routesHandler;
 
     app.$$launch = app.launch;
     app.launch = launchHandler;
@@ -14,10 +9,50 @@ router.addRouter = function(app) {
     app.$$intent = app.intent;
     app.intent = intentHandler;
 
-    function routesHandler(routes, config) {
+    registerIntents(intents);
+    registerRoutes(routes, config);
+    registerDefaultIntents(routes);
+
+    function registerIntents(intents) {
+        if (typeof intents !== 'object') return;
+
+        for (var name in intents) {
+            if (intents[name]) {
+                app.intent(name, intents[name], noop);
+            } else {
+                app.intent(name, noop);
+            }
+        }
+    }
+
+    function registerRoutes(routes, config) {
         app.$$routeList = routes || {};
         app.$$routeConfig = config || {};
+
+        if (typeof app.$$routeConfig.pre === 'function') {
+            app.pre = app.$$routeConfig.pre;
+        }
+
+        if (typeof app.$$routeConfig.post === 'function') {
+            app.post = app.$$routeConfig.post;
+        }
+
+        if (typeof app.$$routeConfig.launch === 'function') {
+            app.launch = app.$$routeConfig.launch;
+        }
     }
+
+    function registerDefaultIntents(routes) {
+        for (var routeName in routes) {
+            for (var intentName in routes[routeName]) {
+                if (!app.intents[intentName]) {
+                    app.intent(intentName, noop);
+                }
+            }
+        }
+    }
+
+    function noop(request, response) {}
 
     function launchHandler(handler) {
         app.$$launch(function (request, response) {
@@ -42,10 +77,10 @@ router.addRouter = function(app) {
             var routeName;
             routeName = request.session('route');
             response.session('route', null);
-            console.log('Route: ' + routeName);
-            console.log('Intent: ' + name);
 
-            response.route = function (nextRouteName) {
+            request.route = routeName;
+
+            response.route = function(nextRouteName) {
                 response
                     .shouldEndSession(false)
                     .session('route', nextRouteName);
