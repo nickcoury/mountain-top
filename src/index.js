@@ -1,6 +1,6 @@
 var _ = require('lodash');
 var alexa = require('alexa-app');
-var router = require('./alexa-app-router');
+var router = require('alexa-app-router');
 var Promise = require("bluebird");
 var strava = require('strava-v3');
 
