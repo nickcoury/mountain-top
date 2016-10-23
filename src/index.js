@@ -64,9 +64,7 @@ function launchHandler(request, response) {
     console.log('app.launch');
     var text;
 
-    strava.athlete.getAsync({
-        access_token: accessToken
-    }).then(function (athlete) {
+    getCached(request, response, 'athlete', 'getAsync', {}).then(function (athlete) {
         return ' ' + athlete.firstname + ' ' + athlete.lastname;
     }).catch(function (err) {
     }).then(function (name) {
@@ -102,9 +100,7 @@ function summaryHandler(request, response) {
     console.log('summaryHandler');
     var text = 'Here is your Straava summary.';
 
-    strava.athlete.getAsync({
-        access_token: accessToken
-    }).then(function () {
+    getCached(request, response, 'athlete', 'getAsync', {}).then(function () {
         console.log(text);
         response.say(text).send();
     }).catch(function (err) {
@@ -120,10 +116,8 @@ function recentActivitiesHandler(request, response) {
     var number = 10;
     var text = '';
 
-    strava.athlete.getAsync({
-        access_token: accessToken
-    }).then(function (athlete) {
-        return strava.athlete.listActivitiesAsync({
+    getCached(request, response, 'athlete', 'getAsync', {}).then(function (athlete) {
+        return getCached(request, response, 'athlete', 'listActivitiesAsync', {
             access_token: accessToken,
             per_page: number
         });
@@ -131,8 +125,8 @@ function recentActivitiesHandler(request, response) {
         text += 'Here are your ' + activities.length + ' most recent activities';
         _(activities)
             .forEach(function(activity) {
-                var distance = activity.distance * 0.000621371192;
-                var climbing = activity.total_elevation_gain * 3.2808399;
+                var distance = toMiles(activity.distance);
+                var climbing = toFeet(activity.total_elevation_gain);
                 var grade = climbing / (distance * 5280);
                 var date = new Date(activity.start_date);
                 var dateString = isNaN(date.getTime()) ? '' : ' on <say-as interpret-as="date">????' +
@@ -149,6 +143,7 @@ function recentActivitiesHandler(request, response) {
 
         return true;
     }).then(function () {
+        console.log(text);
         response.say(text).send();
     }).catch(function (err) {
         console.log('Recent Activity Intent Error');
@@ -159,22 +154,67 @@ function recentActivitiesHandler(request, response) {
     return false;
 }
 
+function statsHandler(request, response) {
+    console.log('statsHandler');
+    var text = '';
+
+    getCached(request, response, 'athlete', 'getAsync', {}).then(function (athlete) {
+        return getCached(request, response, 'athletes', 'statsAsync', {id: athlete.id});
+    }).then(function (stats) {
+        text += statsHelper(stats, 'recent', 'Your totals from the last four weeks:');
+        text += statsHelper(stats, 'ytd', 'Your year to date totals:');
+        text += statsHelper(stats, 'all', 'Your lifetime totals:');
+        return true;
+    }).then(function () {
+        console.log(text);
+        response.say(text).send();
+    }).catch(function (err) {
+        console.log('Stats Intent Error');
+        console.log(JSON.stringify(err));
+        response.say('There was an error. Please try again.').send();
+    });
+
+    return false;
+}
+
+function statsHelper(stats, category, intro) {
+    var text =
+        statsSubHelper(stats[category + '_ride_totals'], 'ride') +
+        statsSubHelper(stats[category + '_run_totals'], 'run') +
+        statsSubHelper(stats[category + '_swim_totals'], 'swim');
+    if (text.length > 0) {
+        text = '<p>' + intro + '</p>' + text;
+    }
+    return text;
+}
+
+function statsSubHelper(totals, type) {
+    var text = '';
+    if (!totals || !totals.count) return text;
+
+    text += totals.count + ' ' + type + 's. ';
+    text += toMiles(totals.distance).toFixed(0) + ' miles with ' +
+        +toFeet(totals.elevation_gain).toPrecision(3) + ' feet of elevation gain in ' +
+        toTimeSsml(totals.moving_time) + '. ';
+    text += totals.achievement_count ? 'Earned ' + totals.achievement_count + ' achievements.' : '';
+
+    return '<p>' + text + '</p>';
+}
+
 function friendsHandler(request, response) {
     console.log('friendsHandler');
     var text = '';
 
-    strava.athlete.getAsync({
-        access_token: accessToken
-    }).then(function (athlete) {
-        return strava.activities.listFriendsAsync({access_token: accessToken});
+    getCached(request, response, 'athlete', 'getAsync', {}).then(function (athlete) {
+        return getCached(request, response, 'athlete', 'listFriendsAsync', {});
     }).then(function (friendActivities) {
         text += 'Found ' + friendActivities.length + ' friend activities. ';
 
         _(friendActivities)
             .take(20)
             .forEach(function(activity) {
-                var distance = activity.distance * 0.000621371192;
-                var climbing = activity.total_elevation_gain * 3.2808399;
+                var distance = toMiles(activity.distance);
+                var climbing = toFeet(activity.total_elevation_gain);
                 var grade = climbing / (distance * 5280);
                 var friendSumary = [
                     activity.athlete.firstname + ' ' + activity.athlete.lastname + ' posted ' + activity.name + '. ',
@@ -199,6 +239,52 @@ function friendsHandler(request, response) {
     return false;
 }
 
-function statsHandler(request, response) {
+function toMiles(meters) {
+    return meters * 0.000621371192;
+}
 
+function toFeet(meters) {
+    return meters * 3.2808399;
+}
+
+function toTime(seconds) {
+    return {
+        seconds: seconds % 60,
+        minutes: Math.floor(seconds/60) % 60,
+        hours: Math.floor(seconds/3600) % 3600,
+        days: Math.floor(seconds/86400) % 86400
+    };
+}
+
+function toTimeSsml(seconds) {
+    if (!seconds) return '0 seconds';
+    var time = toTime(seconds);
+    var parts = [];
+    if (time.days) parts.push(time.days + ' days');
+    if (time.hours) parts.push(time.hours + ' hours');
+    if (time.minutes) parts.push(time.minutes + ' minutes');
+    if (time.seconds) parts.push(time.seconds + ' seconds');
+    return parts.join(' ');
+}
+
+function getCached(request, response, category, method, args) {
+    args = args || {};
+    var keyArgs = [category, method];
+    for (var arg in args) {
+        keyArgs.push(arg + '=' + args[arg]);
+    }
+    var key = keyArgs.join(':');
+    var value = request.session(key);
+
+    if (value) {
+        console.log('Cache hit for ', category, method, args);
+        return Promise.resolve(value);
+    } else {
+        args.access_token = accessToken;
+        var promise = strava[category][method](args);
+        promise.then(function (result) {
+           response.session(key, result);
+        });
+        return promise;
+    }
 }
