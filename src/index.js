@@ -15,15 +15,16 @@ var config = {
 };
 
 var intents = {
-    SummaryIntent: { utterances: ['{please |}{get|give|read} {me |} my {weekly |}{summary|updates}'] },
-    StatsIntent: { utterances: ['{please |}{get|give|read} {me |} my {stats|statistics}'] },
-    FriendsIntent: { utterances: ['{please |}{get|give|read} {me |} my {recent |}{friend|friends}{ activities| summary|}'] },
-    RecentActivitiesIntent: { utterances: ['{give |what are |}{my |me my |}{recent |} activities'] }
+    SummaryIntent: { utterances: ['{get|give|read} {me |my |}{summary}'] },
+    StatsIntent: { utterances: ['{get|give|read} {me |my |}{stats|statistics}'] },
+    FriendsIntent: { utterances: ['{get|give|read} {me |my |}{friend|friends}{ activities|}'] },
+    RecentActivitiesIntent: { utterances: ['{get|give|read} {me |my |}{recent |} activities'] }
 };
 
 var routes = {
     '/': {
         'AMAZON.HelpIntent': menuHandler,
+        'AMAZON.StopIntent': exitHandler,
         FriendsIntent: friendsHandler,
         RecentActivitiesIntent: recentActivitiesHandler,
         StatsIntent: statsHandler,
@@ -69,7 +70,7 @@ function launchHandler(request, response) {
         return ' ' + athlete.firstname + ' ' + athlete.lastname;
     }).catch(function (err) {
     }).then(function (name) {
-        text += 'Hello' + (name || '') + '. Welcome to Straavalexa. Say yes to get your summary, or, you can ask for help.';
+        text += 'Hello' + (name || '') + '. Welcome to Straavalexa. Say summary to get your summary, or, you can ask for help.';
         console.log(text);
         response
             .say(text)
@@ -79,7 +80,6 @@ function launchHandler(request, response) {
 
     return false;
 }
-
 
 function menuHandler(request, response) {
     var text = [
@@ -97,7 +97,13 @@ function menuHandler(request, response) {
         .send();
 }
 
-
+function exitHandler(request, response) {
+    var text = 'Thanks for using straavalexa!';
+    console.log(text);
+    response
+        .say(text)
+        .send();
+}
 
 function summaryHandler(request, response) {
     console.log('summaryHandler');
