@@ -15,7 +15,8 @@ var config = {
 };
 
 var intents = {
-    SummaryIntent: { utterances: ['{please |}{get|give|read} {me |} my {summary|updates}'] },
+    SummaryIntent: { utterances: ['{please |}{get|give|read} {me |} my {weekly |}{summary|updates}'] },
+    StatsIntent: { utterances: ['{please |}{get|give|read} {me |} my {stats|statistics}'] },
     FriendsIntent: { utterances: ['{please |}{get|give|read} {me |} my {friend|friends}{ activities|}'] },
     RecentActivitiesIntent: { utterances: ['{give |what are |}{my |me my |}{recent |} activities'] }
 };
@@ -85,7 +86,8 @@ function menuHandler(request, response) {
         '<p>Here are some things to say:</p>',
         '<p>Give me my summary.</p>',
         '<p>Give me my recent activities.</p>',
-        '<p>Give me my friends activities.</p>'
+        '<p>Give me my friends activities.</p>',
+        '<p>Give me my stats.</p>'
     ].join('');
 
     console.log(text);
@@ -98,9 +100,23 @@ function menuHandler(request, response) {
 
 function summaryHandler(request, response) {
     console.log('summaryHandler');
-    var text = 'Here is your Straava summary.';
+    var text = '<p>Here is your weekly summary.</p>';
+    var now = new Date(request.data.request.timestamp);
+    now.setHours(now.getHours()-8);
 
-    getCached(request, response, 'athlete', 'getAsync', {}).then(function () {
+    getCached(request, response, 'athlete', 'getAsync', {}).then(function (athlete) {
+        return getCached(request, response, 'athlete', 'listActivitiesAsync', {
+            after: getMonday(now, 1).getTime()/1000
+        });
+    }).then(function (activities) {
+        var monday = getMonday(now);
+        var thisWeek = _.filter(activities, function(activity) { return new Date(activity.start_date) >= monday; });
+        var lastWeek = _.filter(activities, function(activity) { return new Date(activity.start_date) < monday; });
+
+        text += summaryHelper(thisWeek, 'this');
+        text += summaryHelper(lastWeek, 'last');
+        return true;
+    }).then(function () {
         console.log(text);
         response.say(text).send();
     }).catch(function (err) {
@@ -112,14 +128,48 @@ function summaryHandler(request, response) {
     return false;
 }
 
+function summaryHelper(activities, week) {
+    if (!activities || !activities.length) return '<p>No activities found ' + week + ' week.</p>';
+    var text =
+        summarySubHelper(activities, 'ride') +
+        summarySubHelper(activities, 'run') +
+        summarySubHelper(activities, 'swim');
+
+    return '<p>' + week + ' week\'s summary.</p>' + text;
+}
+
+function summarySubHelper(activities, type) {
+    var summary = _(activities)
+        .filter(function(activity) { return activity.type.toLowerCase() === type; })
+        .reduce(function(summary, activity) {
+            summary.count = summary.count ? summary.count + 1 : 1;
+            summary.distance += activity.distance;
+            summary.moving_time += activity.moving_time;
+            summary.total_elevation_gain += activity.total_elevation_gain;
+            summary.achievement_count += activity.achievement_count;
+            return summary;
+        });
+    if (!summary) return '';
+
+    var distance = toMiles(summary.distance);
+    var climbing = toFeet(summary.total_elevation_gain);
+
+    var text = summary.count + ' ' + type + 's. ';
+    text += +distance.toFixed(1) + ' miles with ' + +climbing.toPrecision(3) + ' feet of climbing in '
+        + toTimeSsml(summary.moving_time - summary.moving_time % 60) + '. ';
+    text += summary.achievement_count === 0 ? '' : 'You earned ' + summary.achievement_count + ' achievements. ';
+
+    return '<p>' + text + '</p>';
+}
+
 function recentActivitiesHandler(request, response) {
     var number = 10;
     var text = '';
 
     getCached(request, response, 'athlete', 'getAsync', {}).then(function (athlete) {
         return getCached(request, response, 'athlete', 'listActivitiesAsync', {
-            access_token: accessToken,
             per_page: number
+
         });
     }).then(function (activities) {
         text += 'Here are your ' + activities.length + ' most recent activities';
@@ -130,7 +180,7 @@ function recentActivitiesHandler(request, response) {
                 var grade = climbing / (distance * 5280);
                 var date = new Date(activity.start_date);
                 var dateString = isNaN(date.getTime()) ? '' : ' on <say-as interpret-as="date">????' +
-                    ('00' + date.getMonth()).slice(-2) + ('00' + date.getDate()).slice(-2) + '</say-as>';
+                    ('00' + (date.getMonth()+1)).slice(-2) + ('00' + date.getDate()).slice(-2) + '</say-as>';
                 var summary = [
                     'You posted ' + activity.name + dateString + '. ',
                     activity.type + ' of ' + +distance.toFixed(0) + ' miles',
@@ -193,7 +243,7 @@ function statsSubHelper(totals, type) {
     if (!totals || !totals.count) return text;
 
     text += totals.count + ' ' + type + 's. ';
-    text += toMiles(totals.distance).toFixed(0) + ' miles with ' +
+    text += toMiles(totals.distance).toFixed(1) + ' miles with ' +
         +toFeet(totals.elevation_gain).toPrecision(3) + ' feet of elevation gain in ' +
         toTimeSsml(totals.moving_time) + '. ';
     text += totals.achievement_count ? 'Earned ' + totals.achievement_count + ' achievements.' : '';
@@ -265,6 +315,15 @@ function toTimeSsml(seconds) {
     if (time.minutes) parts.push(time.minutes + ' minutes');
     if (time.seconds) parts.push(time.seconds + ' seconds');
     return parts.join(' ');
+}
+
+function getMonday(now, weeksAgo) {
+    var d = new Date(now.getTime());
+    var day = d.getDay();
+    var diff = d.getDate() - day + (day == 0 ? -6:1) - ((weeksAgo||0) * 7); // adjust when day is sunday
+    var monday = new Date(d.setDate(diff));
+    monday.setHours(0,0,0,0);
+    return monday;
 }
 
 function getCached(request, response, category, method, args) {
