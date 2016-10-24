@@ -17,7 +17,7 @@ var config = {
 var intents = {
     SummaryIntent: { utterances: ['{please |}{get|give|read} {me |} my {weekly |}{summary|updates}'] },
     StatsIntent: { utterances: ['{please |}{get|give|read} {me |} my {stats|statistics}'] },
-    FriendsIntent: { utterances: ['{please |}{get|give|read} {me |} my {recent |}{friend|friends}{ activities|}'] },
+    FriendsIntent: { utterances: ['{please |}{get|give|read} {me |} my {recent |}{friend|friends}{ activities| summary|}'] },
     RecentActivitiesIntent: { utterances: ['{give |what are |}{my |me my |}{recent |} activities'] }
 };
 
@@ -65,7 +65,7 @@ function launchHandler(request, response) {
     console.log('app.launch');
     var text = '';
 
-    getCached(request, response, 'athlete', 'getAsync', {}).then(function (athlete) {
+    getCached(request, response, 'athlete', 'getAsync', {}, true).then(function (athlete) {
         return ' ' + athlete.firstname + ' ' + athlete.lastname;
     }).catch(function (err) {
     }).then(function (name) {
@@ -105,10 +105,10 @@ function summaryHandler(request, response) {
     var now = new Date(request.data.request.timestamp);
     now.setHours(now.getHours()-8);
 
-    getCached(request, response, 'athlete', 'getAsync', {}).then(function (athlete) {
+    getCached(request, response, 'athlete', 'getAsync', {}, true).then(function (athlete) {
         return getCached(request, response, 'athlete', 'listActivitiesAsync', {
             after: getMonday(now, 1).getTime()/1000
-        });
+        }, false);
     }).then(function (activities) {
         var monday = getMonday(now);
         var thisWeek = _.filter(activities, function(activity) { return new Date(activity.start_date) >= monday; });
@@ -121,7 +121,7 @@ function summaryHandler(request, response) {
         console.log(text);
         response
             .say(text)
-            .route('/go-to-summary')
+            .route('/')
             .send();
     }).catch(function (err) {
         console.log('Summary Intent Error');
@@ -171,12 +171,9 @@ function recentActivitiesHandler(request, response) {
     var number = 10;
     var text = '';
 
-    getCached(request, response, 'athlete', 'getAsync', {}).then(function (athlete) {
-        return getCached(request, response, 'athlete', 'listActivitiesAsync', {
+    getCached(request, response, 'athlete', 'listActivitiesAsync', {
             per_page: number
-
-        });
-    }).then(function (activities) {
+        }, false).then(function (activities) {
         text += 'Here are your ' + activities.length + ' most recent activities';
         _(activities)
             .forEach(function(activity) {
@@ -202,7 +199,7 @@ function recentActivitiesHandler(request, response) {
         console.log(text);
         response
             .say(text)
-            .route('/go-to-summary')
+            .route('/')
             .send();
     }).catch(function (err) {
         console.log('Recent Activity Intent Error');
@@ -217,8 +214,8 @@ function statsHandler(request, response) {
     console.log('statsHandler');
     var text = '';
 
-    getCached(request, response, 'athlete', 'getAsync', {}).then(function (athlete) {
-        return getCached(request, response, 'athletes', 'statsAsync', {id: athlete.id});
+    getCached(request, response, 'athlete', 'getAsync', {}, true).then(function (athlete) {
+        return getCached(request, response, 'athletes', 'statsAsync', {id: athlete.id}, false);
     }).then(function (stats) {
         text += statsHelper(stats, 'recent', 'Your totals from the last four weeks:');
         text += statsHelper(stats, 'ytd', 'Your year to date totals:');
@@ -228,7 +225,7 @@ function statsHandler(request, response) {
         console.log(text);
         response
             .say(text)
-            .route('/go-to-summary')
+            .route('/')
             .send();
     }).catch(function (err) {
         console.log('Stats Intent Error');
@@ -269,9 +266,7 @@ function friendsHandler(request, response) {
     console.log('friendsHandler');
     var text = '';
 
-    getCached(request, response, 'athlete', 'getAsync', {}).then(function (athlete) {
-        return getCached(request, response, 'activities', 'listFriendsAsync', {});
-    }).then(function (friendActivities) {
+    getCached(request, response, 'activities', 'listFriendsAsync', {}, false).then(function (friendActivities) {
         friendActivities = _.take(friendActivities, 20);
         text += 'Found ' + friendActivities.length + ' friend activities. ';
 
@@ -285,7 +280,7 @@ function friendsHandler(request, response) {
                     pastTense(activity.type) + ' ' + +distance.toFixed(0) + ' mile' + (+distance.toFixed(0) > 1 ? 's' : ''),
                     grade > 0.02 ? ' with ' + +climbing.toPrecision(2) + ' feet of climbing. ' : '. ',
                     activity.achievement_count === 0 ? '' : activity.athlete.firstname + ' earned '
-                        + activity.achievement_count + ' achievement' + (activity.achievement_count === 1 ? '. ' : 's. ')
+                    + activity.achievement_count + ' achievement' + (activity.achievement_count === 1 ? '. ' : 's. ')
                 ].join('');
 
                 text += '<p>' + friendSumary + '</p>';
@@ -296,7 +291,7 @@ function friendsHandler(request, response) {
         console.log(text);
         response
             .say(text)
-            .route('/go-to-summary')
+            .route('/')
             .send();
     }).catch(function (err) {
         console.log('Friends Intent Error');
@@ -344,7 +339,7 @@ function getMonday(now, weeksAgo) {
     return monday;
 }
 
-function getCached(request, response, category, method, args) {
+function getCached(request, response, category, method, args, store) {
     args = args || {};
     var keyArgs = [category, method];
     for (var arg in args) {
@@ -359,9 +354,11 @@ function getCached(request, response, category, method, args) {
     } else {
         args.access_token = accessToken;
         var promise = strava[category][method](args);
-        promise.then(function (result) {
-           response.session(key, result);
-        });
+        if (store) {
+            promise.then(function (result) {
+                response.session(key, result);
+            });
+        }
         return promise;
     }
 }
