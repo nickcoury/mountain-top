@@ -63,13 +63,13 @@ function preHandler(request, response) {
 
 function launchHandler(request, response) {
     console.log('app.launch');
-    var text;
+    var text = '';
 
     getCached(request, response, 'athlete', 'getAsync', {}).then(function (athlete) {
         return ' ' + athlete.firstname + ' ' + athlete.lastname;
     }).catch(function (err) {
     }).then(function (name) {
-        text += 'Hello' + (name || '') + '. Welcome to Straavalexa. Would you like your summary?';
+        text += 'Hello' + (name || '') + '. Welcome to Straavalexa. Would you like your summary? Or, ask for help.';
         console.log(text);
         response
             .say(text)
@@ -93,6 +93,7 @@ function menuHandler(request, response) {
     console.log(text);
     response
         .say(text)
+        .route('/')
         .send();
 }
 
@@ -100,7 +101,7 @@ function menuHandler(request, response) {
 
 function summaryHandler(request, response) {
     console.log('summaryHandler');
-    var text = '<p>Here is your weekly summary.</p>';
+    var text = '';
     var now = new Date(request.data.request.timestamp);
     now.setHours(now.getHours()-8);
 
@@ -118,7 +119,10 @@ function summaryHandler(request, response) {
         return true;
     }).then(function () {
         console.log(text);
-        response.say(text).send();
+        response
+            .say(text)
+            .route('/go-to-summary')
+            .send();
     }).catch(function (err) {
         console.log('Summary Intent Error');
         console.log(JSON.stringify(err));
@@ -194,7 +198,10 @@ function recentActivitiesHandler(request, response) {
         return true;
     }).then(function () {
         console.log(text);
-        response.say(text).send();
+        response
+            .say(text)
+            .route('/go-to-summary')
+            .send();
     }).catch(function (err) {
         console.log('Recent Activity Intent Error');
         console.log(JSON.stringify(err));
@@ -217,7 +224,10 @@ function statsHandler(request, response) {
         return true;
     }).then(function () {
         console.log(text);
-        response.say(text).send();
+        response
+            .say(text)
+            .route('/go-to-summary')
+            .send();
     }).catch(function (err) {
         console.log('Stats Intent Error');
         console.log(JSON.stringify(err));
@@ -279,7 +289,10 @@ function friendsHandler(request, response) {
         return true;
     }).then(function () {
         console.log(text);
-        response.say(text).send();
+        response
+            .say(text)
+            .route('/go-to-summary')
+            .send();
     }).catch(function (err) {
         console.log('Friends Intent Error');
         console.log(JSON.stringify(err));
