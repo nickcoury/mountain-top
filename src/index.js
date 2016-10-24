@@ -17,7 +17,7 @@ var config = {
 var intents = {
     SummaryIntent: { utterances: ['{please |}{get|give|read} {me |} my {weekly |}{summary|updates}'] },
     StatsIntent: { utterances: ['{please |}{get|give|read} {me |} my {stats|statistics}'] },
-    FriendsIntent: { utterances: ['{please |}{get|give|read} {me |} my {friend|friends}{ activities|}'] },
+    FriendsIntent: { utterances: ['{please |}{get|give|read} {me |} my {recent |}{friend|friends}{ activities|}'] },
     RecentActivitiesIntent: { utterances: ['{give |what are |}{my |me my |}{recent |} activities'] }
 };
 
@@ -159,9 +159,10 @@ function summarySubHelper(activities, type) {
     var climbing = toFeet(summary.total_elevation_gain);
 
     var text = summary.count + ' ' + type + 's. ';
-    text += +distance.toFixed(1) + ' miles with ' + +climbing.toPrecision(3) + ' feet of climbing in '
-        + toTimeSsml(summary.moving_time - summary.moving_time % 60) + '. ';
-    text += summary.achievement_count === 0 ? '' : 'You earned ' + summary.achievement_count + ' achievements. ';
+    text += +distance.toFixed(1) + ' mile' + (+distance.toFixed(1) === 1 ? '' : 's') + ' with ' + +climbing.toPrecision(3) + ' feet of climbing in '
+        + toTimeSsml(summary.moving_time) + '. ';
+    text += summary.achievement_count === 0 ? '' : 'You earned ' + summary.achievement_count
+        + ' achievement' + (summary.achievement_count === 1 ? '' : 's') + '. ';
 
     return '<p>' + text + '</p>';
 }
@@ -187,9 +188,10 @@ function recentActivitiesHandler(request, response) {
                     ('00' + (date.getMonth()+1)).slice(-2) + ('00' + date.getDate()).slice(-2) + '</say-as>';
                 var summary = [
                     'You posted ' + activity.name + dateString + '. ',
-                    activity.type + ' of ' + +distance.toFixed(0) + ' miles',
+                    activity.type + ' of ' + +distance.toFixed(0) + ' mile' + (+distance.toFixed(0) === 1 ? '' : 's'),
                     grade > 0.02 ? ' with ' + +climbing.toPrecision(2) + ' feet of climbing. ' : '. ',
-                    activity.achievement_count === 0 ? '' : 'You earned ' + activity.achievement_count + ' achievements. '
+                    activity.achievement_count === 0 ? '' : 'You earned ' + activity.achievement_count
+                        + ' achievement' + (activity.achievement_count === 1 ? '' : 's') + '. '
                 ].join('');
 
                 text += '<p>' + summary + '</p>';
@@ -251,12 +253,14 @@ function statsHelper(stats, category, intro) {
 function statsSubHelper(totals, type) {
     var text = '';
     if (!totals || !totals.count) return text;
+    var distance = +toMiles(totals.distance).toFixed(1);
 
     text += totals.count + ' ' + type + 's. ';
-    text += toMiles(totals.distance).toFixed(1) + ' miles with ' +
+    text += distance + ' mile' + (distance == 1 ? '' : 's') + ' with ' +
         +toFeet(totals.elevation_gain).toPrecision(3) + ' feet of elevation gain in ' +
         toTimeSsml(totals.moving_time) + '. ';
-    text += totals.achievement_count ? 'Earned ' + totals.achievement_count + ' achievements.' : '';
+    text += totals.achievement_count ? 'Earned ' + totals.achievement_count
+        + ' achievement' + (totals.achievement_count === 1 ? '' : 's') + '.' : '';
 
     return '<p>' + text + '</p>';
 }
@@ -266,21 +270,22 @@ function friendsHandler(request, response) {
     var text = '';
 
     getCached(request, response, 'athlete', 'getAsync', {}).then(function (athlete) {
-        return getCached(request, response, 'athlete', 'listFriendsAsync', {});
+        return getCached(request, response, 'activities', 'listFriendsAsync', {});
     }).then(function (friendActivities) {
+        friendActivities = _.take(friendActivities, 20);
         text += 'Found ' + friendActivities.length + ' friend activities. ';
 
         _(friendActivities)
-            .take(20)
             .forEach(function(activity) {
                 var distance = toMiles(activity.distance);
                 var climbing = toFeet(activity.total_elevation_gain);
                 var grade = climbing / (distance * 5280);
                 var friendSumary = [
                     activity.athlete.firstname + ' ' + activity.athlete.lastname + ' posted ' + activity.name + '. ',
-                    activity.type + ' of ' + +distance.toFixed(0) + ' miles',
+                    activity.type + ' of ' + +distance.toFixed(0) + ' mile' + (+distance.toFixed(0) > 1 ? 's' : ''),
                     grade > 0.02 ? ' with ' + +climbing.toPrecision(2) + ' feet of climbing. ' : '. ',
-                    activity.achievement_count === 0 ? '' : activity.athlete.firstname + ' earned ' + activity.achievement_count + ' achievements. '
+                    activity.achievement_count === 0 ? '' : activity.athlete.firstname + ' earned '
+                        + activity.achievement_count + ' achievement' + (activity.achievement_count === 1 ? '. ' : 's. ')
                 ].join('');
 
                 text += '<p>' + friendSumary + '</p>';
@@ -314,8 +319,8 @@ function toTime(seconds) {
     return {
         seconds: seconds % 60,
         minutes: Math.floor(seconds/60) % 60,
-        hours: Math.floor(seconds/3600) % 3600,
-        days: Math.floor(seconds/86400) % 86400
+        hours: Math.floor(seconds/3600) % 24,
+        days: Math.floor(seconds/86400)
     };
 }
 
@@ -326,7 +331,7 @@ function toTimeSsml(seconds) {
     if (time.days) parts.push(time.days + ' days');
     if (time.hours) parts.push(time.hours + ' hours');
     if (time.minutes) parts.push(time.minutes + ' minutes');
-    if (time.seconds) parts.push(time.seconds + ' seconds');
+    if (parts.length === 0) parts.push(time.seconds + ' seconds');
     return parts.join(' ');
 }
 
