@@ -69,7 +69,7 @@ function launchHandler(request, response) {
         return ' ' + athlete.firstname + ' ' + athlete.lastname;
     }).catch(function (err) {
     }).then(function (name) {
-        text += 'Hello' + (name || '') + '. Welcome to Straavalexa. Would you like your summary? Or, ask for help.';
+        text += 'Hello' + (name || '') + '. Welcome to Straavalexa. Say yes to get your summary, or, you can ask for help.';
         console.log(text);
         response
             .say(text)
@@ -188,7 +188,7 @@ function recentActivitiesHandler(request, response) {
                     ('00' + (date.getMonth()+1)).slice(-2) + ('00' + date.getDate()).slice(-2) + '</say-as>';
                 var summary = [
                     'You posted ' + activity.name + dateString + '. ',
-                    activity.type + ' of ' + +distance.toFixed(0) + ' mile' + (+distance.toFixed(0) === 1 ? '' : 's'),
+                    pastTense(activity.type) + ' ' + +distance.toFixed(0) + ' mile' + (+distance.toFixed(0) === 1 ? '' : 's'),
                     grade > 0.02 ? ' with ' + +climbing.toPrecision(2) + ' feet of climbing. ' : '. ',
                     activity.achievement_count === 0 ? '' : 'You earned ' + activity.achievement_count
                         + ' achievement' + (activity.achievement_count === 1 ? '' : 's') + '. '
@@ -282,7 +282,7 @@ function friendsHandler(request, response) {
                 var grade = climbing / (distance * 5280);
                 var friendSumary = [
                     activity.athlete.firstname + ' ' + activity.athlete.lastname + ' posted ' + activity.name + '. ',
-                    activity.type + ' of ' + +distance.toFixed(0) + ' mile' + (+distance.toFixed(0) > 1 ? 's' : ''),
+                    pastTense(activity.type) + ' ' + +distance.toFixed(0) + ' mile' + (+distance.toFixed(0) > 1 ? 's' : ''),
                     grade > 0.02 ? ' with ' + +climbing.toPrecision(2) + ' feet of climbing. ' : '. ',
                     activity.achievement_count === 0 ? '' : activity.athlete.firstname + ' earned '
                         + activity.achievement_count + ' achievement' + (activity.achievement_count === 1 ? '. ' : 's. ')
@@ -364,4 +364,13 @@ function getCached(request, response, category, method, args) {
         });
         return promise;
     }
+}
+
+function pastTense(type) {
+    var types = {
+        run: 'ran',
+        ride: 'rode',
+        swim: 'swam'
+    };
+    return types[type.toLowerCase()] || type;
 }
