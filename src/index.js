@@ -70,10 +70,10 @@ function launchHandler(request, response) {
         return ' ' + athlete.firstname + ' ' + athlete.lastname;
     }).catch(function (err) {
     }).then(function (name) {
-        text += 'Hello' + (name || '') + '. Welcome to Straavalexa. Say summary to get your summary, or, you can ask for help.';
+        text += 'Hello' + (name || '') + '. Welcome to Mountaintop. Say summary to get your summary, or, you can ask for help.';
         console.log(text);
         response
-            .say(text)
+            .say(validateText(text))
             .route('/go-to-summary')
             .send();
     });
@@ -83,7 +83,7 @@ function launchHandler(request, response) {
 
 function menuHandler(request, response) {
     var text = [
-        '<p>Here are some things to say:</p>',
+        '<p>You can say:</p>',
         '<p>Give me my summary.</p>',
         '<p>Give me my recent activities.</p>',
         '<p>Give me my friends activities.</p>',
@@ -92,16 +92,16 @@ function menuHandler(request, response) {
 
     console.log(text);
     response
-        .say(text)
+        .say(validateText(text))
         .route('/')
         .send();
 }
 
 function exitHandler(request, response) {
-    var text = 'Thanks for using straavalexa!';
+    var text = 'Thanks for using Mountaintop!';
     console.log(text);
     response
-        .say(text)
+        .say(validateText(text))
         .send();
 }
 
@@ -124,9 +124,10 @@ function summaryHandler(request, response) {
         text += summaryHelper(lastWeek, 'last');
         return true;
     }).then(function () {
+        text += '<p>What would you like next?</p>';
         console.log(text);
         response
-            .say(text)
+            .say(validateText(text))
             .route('/')
             .send();
     }).catch(function (err) {
@@ -202,9 +203,10 @@ function recentActivitiesHandler(request, response) {
 
         return true;
     }).then(function () {
+        text += '<p>What would you like next?</p>';
         console.log(text);
         response
-            .say(text)
+            .say(validateText(text))
             .route('/')
             .send();
     }).catch(function (err) {
@@ -228,9 +230,10 @@ function statsHandler(request, response) {
         text += statsHelper(stats, 'all', 'Your lifetime totals:');
         return true;
     }).then(function () {
+        text += '<p>What would you like next?</p>';
         console.log(text);
         response
-            .say(text)
+            .say(validateText(text))
             .route('/')
             .send();
     }).catch(function (err) {
@@ -294,11 +297,13 @@ function friendsHandler(request, response) {
 
         return true;
     }).then(function () {
+        text += '<p>What would you like next?</p>';
         console.log(text);
         response
-            .say(text)
+            .say(validateText(text))
             .route('/')
             .send();
+        console.log(response.response);
     }).catch(function (err) {
         console.log('Friends Intent Error');
         console.log(JSON.stringify(err));
@@ -376,4 +381,9 @@ function pastTense(type) {
         swim: 'swam'
     };
     return types[type.toLowerCase()] || type;
+}
+
+function validateText(text) {
+    text = text.replace(/[^\w\s@/<>.,-="']/gi, '');
+    return text;
 }
