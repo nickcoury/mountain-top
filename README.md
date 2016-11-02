@@ -1,5 +1,5 @@
-# Strava Alexa Skill
-A [Strava](http://www.strava.com) skill for reviewing your recent activities.
+# Mountaintop for Strava
+An unofficial [Strava](http://www.strava.com) skill for reviewing your recent activities.
 
 ## Features
 This skill can:
@@ -7,8 +7,8 @@ This skill can:
 - Read back recent activity details.
 
 ## Examples
-    User: "Alexa, ask stravalexa for my summary."
-    User: "Alexa, ask stravalexa for my recent activities"
+    User: "Alexa, ask mountaintop for my summary."
+    User: "Alexa, ask mountaintop for my recent activities"
 
 ## Setup
 Copy `src/data/strava_config.template` to `src/data/strava_config` and fill in credentials.
