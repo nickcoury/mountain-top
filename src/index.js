@@ -15,22 +15,24 @@ var config = {
 };
 
 var intents = {
-    SummaryIntent: { utterances: ['{get|give|read} {me |my |}{summary}'] },
-    StatsIntent: { utterances: ['{get|give|read} {me |my |}{stats|statistics}'] },
-    FriendsIntent: { utterances: ['{get|give|read} {me |my |}{friend|friends}{ activities|}'] },
-    RecentActivitiesIntent: { utterances: ['{get|give|read} {me |my |}{recent |} activities'] }
+    SummaryIntent: { utterances: ['{get |give |read |}{me|my |}summary'] },
+    StatsIntent: { utterances: ['{get |give |read |}{me |my |}{stats|statistics}'] },
+    FriendsIntent: { utterances: ['{get |give |read |}{me |my |}{friend|friends|friend\'s}{ activities|}'] },
+    RecentActivitiesIntent: { utterances: ['{get |give |read |}{me |my |}{recent |}activities'] }
 };
 
 var routes = {
     '/': {
+        'AMAZON.CancelIntent': exitHandler,
         'AMAZON.HelpIntent': menuHandler,
+        'AMAZON.StartOverIntent': launchHandler,
         'AMAZON.StopIntent': exitHandler,
         FriendsIntent: friendsHandler,
         RecentActivitiesIntent: recentActivitiesHandler,
         StatsIntent: statsHandler,
         SummaryIntent: summaryHandler
     },
-    '/go-to-summary': {
+    '/summary': {
         'AMAZON.NoIntent': menuHandler,
         'AMAZON.YesIntent': summaryHandler
     }
@@ -74,7 +76,7 @@ function launchHandler(request, response) {
         console.log(text);
         response
             .say(validateText(text))
-            .route('/go-to-summary')
+            .route('/summary')
             .send();
     });
 
@@ -114,7 +116,7 @@ function summaryHandler(request, response) {
     getCached(request, response, 'athlete', 'getAsync', {}, true).then(function (athlete) {
         return getCached(request, response, 'athlete', 'listActivitiesAsync', {
             after: getMonday(now, 1).getTime()/1000
-        }, false);
+        });
     }).then(function (activities) {
         var monday = getMonday(now);
         var thisWeek = _.filter(activities, function(activity) { return new Date(activity.start_date) >= monday; });
@@ -122,6 +124,9 @@ function summaryHandler(request, response) {
 
         text += summaryHelper(thisWeek, 'this');
         text += summaryHelper(lastWeek, 'last');
+        if (thisWeek.length + lastWeek.length === 0) {
+            text += '<p>Upload some activities and come back soon!</p>'
+        }
         return true;
     }).then(function () {
         text += '<p>What would you like next?</p>';
@@ -175,31 +180,35 @@ function summarySubHelper(activities, type) {
 }
 
 function recentActivitiesHandler(request, response) {
-    var number = 10;
     var text = '';
 
     getCached(request, response, 'athlete', 'listActivitiesAsync', {
-            per_page: number
-        }, false).then(function (activities) {
-        text += 'Here are your ' + activities.length + ' most recent activities';
-        _(activities)
-            .forEach(function(activity) {
-                var distance = toMiles(activity.distance);
-                var climbing = toFeet(activity.total_elevation_gain);
-                var grade = climbing / (distance * 5280);
-                var date = new Date(activity.start_date);
-                var dateString = isNaN(date.getTime()) ? '' : ' on <say-as interpret-as="date">????' +
-                    ('00' + (date.getMonth()+1)).slice(-2) + ('00' + date.getDate()).slice(-2) + '</say-as>';
-                var summary = [
-                    'You posted ' + activity.name + dateString + '. ',
-                    pastTense(activity.type) + ' ' + +distance.toFixed(0) + ' mile' + (+distance.toFixed(0) === 1 ? '' : 's'),
-                    grade > 0.02 ? ' with ' + +climbing.toPrecision(2) + ' feet of climbing. ' : '. ',
-                    activity.achievement_count === 0 ? '' : 'You earned ' + activity.achievement_count
+            page: 0,
+            per_page: 10
+    }).then(function (activities) {
+        if (activities && activities.length > 0) {
+            text += 'Here are your ' + activities.length + ' most recent activities';
+            _(activities)
+                .forEach(function (activity) {
+                    var distance = toMiles(activity.distance);
+                    var climbing = toFeet(activity.total_elevation_gain);
+                    var grade = climbing / (distance * 5280);
+                    var date = new Date(activity.start_date);
+                    var dateString = isNaN(date.getTime()) ? '' : ' on <say-as interpret-as="date">????' +
+                    ('00' + (date.getMonth() + 1)).slice(-2) + ('00' + date.getDate()).slice(-2) + '</say-as>';
+                    var summary = [
+                        'You posted ' + activity.name + dateString + '. ',
+                        pastTense(activity.type) + ' ' + +distance.toFixed(0) + ' mile' + (+distance.toFixed(0) === 1 ? '' : 's'),
+                        grade > 0.02 ? ' with ' + +climbing.toPrecision(2) + ' feet of climbing. ' : '. ',
+                        activity.achievement_count === 0 ? '' : 'You earned ' + activity.achievement_count
                         + ' achievement' + (activity.achievement_count === 1 ? '' : 's') + '. '
-                ].join('');
+                    ].join('');
 
-                text += '<p>' + summary + '</p>';
-            });
+                    text += '<p>' + summary + '</p>';
+                });
+        } else {
+            text += '<p>No recent activities found. Upload some and check back.</p>';
+        }
 
         return true;
     }).then(function () {
@@ -223,11 +232,14 @@ function statsHandler(request, response) {
     var text = '';
 
     getCached(request, response, 'athlete', 'getAsync', {}, true).then(function (athlete) {
-        return getCached(request, response, 'athletes', 'statsAsync', {id: athlete.id}, false);
+        return getCached(request, response, 'athletes', 'statsAsync', {id: athlete.id});
     }).then(function (stats) {
         text += statsHelper(stats, 'recent', 'Your totals from the last four weeks:');
         text += statsHelper(stats, 'ytd', 'Your year to date totals:');
         text += statsHelper(stats, 'all', 'Your lifetime totals:');
+        if (text.trim().length === 0) {
+            text += '<p>No statistics found. Upload some new activities and try back soon.</p>';
+        }
         return true;
     }).then(function () {
         text += '<p>What would you like next?</p>';
@@ -275,8 +287,11 @@ function friendsHandler(request, response) {
     console.log('friendsHandler');
     var text = '';
 
-    getCached(request, response, 'activities', 'listFriendsAsync', {}, false).then(function (friendActivities) {
-        friendActivities = _.take(friendActivities, 20);
+    getCached(request, response, 'activities', 'listFriendsAsync', {
+        page: 0,
+        per_page: 20
+    }).then(function (friendActivities) {
+        if (friendActivities && friendActivities.length > 0) {
         text += 'Found ' + friendActivities.length + ' friend activities. ';
 
         _(friendActivities)
@@ -294,6 +309,9 @@ function friendsHandler(request, response) {
 
                 text += '<p>' + friendSumary + '</p>';
             });
+        } else {
+            text += '<p>No friend activities found. Get them out with you and exercise!</p>';
+        }
 
         return true;
     }).then(function () {
