@@ -72,7 +72,7 @@ function launchHandler(request, response) {
         return ' ' + athlete.firstname + ' ' + athlete.lastname;
     }).catch(function (err) {
     }).then(function (name) {
-        text += 'Hello' + (name || '') + '. Welcome to Mountaintop. Say summary to get your summary, or, you can ask for help.';
+        text += 'Hello' + (name || '') + '. Welcome to Mountain Top. Say summary to get your summary, or, you can ask for help.';
         console.log(text);
         response
             .say(validateText(text))
@@ -100,7 +100,7 @@ function menuHandler(request, response) {
 }
 
 function exitHandler(request, response) {
-    var text = 'Thanks for using Mountaintop!';
+    var text = 'Thanks for using Mountain Top!';
     console.log(text);
     response
         .say(validateText(text))
