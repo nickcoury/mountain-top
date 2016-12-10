@@ -1,12 +1,23 @@
 {
   "name": "mountain-top",
   "version": "0.1.3",
+  "license": "MIT",
+  "description": "Mountain Top Alexa App",
   "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/nickcoury/mountain-top.git"
+  },
   "dependencies": {
     "alexa-app": "^2.3.4",
     "alexa-app-router": "0.0.2",
     "bluebird": "^3.4.6",
     "lodash": "^4.16.4",
     "strava-v3": "^1.12.1"
+  },
+  "devDependencies": {
+    "@types/bluebird": "^3.0.36",
+    "@types/lodash": "^4.14.41",
+    "@types/node": "0.0.2"
   }
 }
