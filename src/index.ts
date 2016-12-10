@@ -23,8 +23,13 @@ import summaryHandler from './handlers/summary';
 
     const intents = {
         FriendsIntent: { utterances: ['{get |give |read |}{me |my |}{friend|friends|friend\'s}{ activities|}'] },
+        MenuIntent: { utterances: ['{get |give |read |}{me |}{the |}{menu|options}'] },
         RecentActivitiesIntent: { utterances: ['{get |give |read |}{me |my |}{recent |}activities'] },
         StatsIntent: { utterances: ['{get |give |read |}{me |my |}{stats|statistics}'] },
+        shouldIIntent: {
+            slots: { activityType: 'ACTIVITY_TYPE' },
+            utterances: ['{what |}{should |can }I {-|activityType}{ today|}']
+        },
         SummaryIntent: { utterances: ['{get |give |read |}{me|my |}summary'] }
     };
 
@@ -35,6 +40,7 @@ import summaryHandler from './handlers/summary';
             'AMAZON.StartOverIntent': launchHandler,
             'AMAZON.StopIntent': exitHandler,
             FriendsIntent: friendsHandler,
+            MenuIntent: menuHandler,
             RecentActivitiesIntent: recentActivitiesHandler,
             StatsIntent: statsHandler,
             SummaryIntent: summaryHandler
@@ -49,7 +55,7 @@ import summaryHandler from './handlers/summary';
 
     app.messages.NO_INTENT_FOUND = 'Sorry, I didn\'t understand that.';
     app.messages.NO_LAUNCH_FUNCTION = 'Please ask me to do something!';
-    app.messages.INVALID_REQUEST_TYPE = 'Sorry, I didn\'t understand that';
+    app.messages.INVALID_REQUEST_TYPE = 'Sorry, I didn\'t understand that.';
     app.messages.GENERIC_ERROR = 'Sorry, something went wrong. Please try saying something else.';
 
     // Connect to lambda
