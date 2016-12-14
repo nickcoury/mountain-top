@@ -11,6 +11,7 @@
     "preinstall": "cd src && npm i && cd .."
   },
   "devDependencies": {
+    "@types/node": "0.0.2",
     "gulp": "^3.9.1",
     "gulp-awslambda": "^0.4.0",
     "gulp-typescript": "^3.1.3",

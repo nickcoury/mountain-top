@@ -1,4 +1,3 @@
-declare let exports:any;
 import * as _ from 'lodash';
 import * as alexa from 'alexa-app';
 import * as router from 'alexa-app-router';
@@ -9,6 +8,7 @@ import { getCached, validateText } from './util';
 import friendsHandler from './handlers/friends';
 import recentActivitiesHandler from './handlers/recent';
 import statsHandler from './handlers/stats';
+import suggestHandler from './handlers/suggest';
 import summaryHandler from './handlers/summary';
 
 (function() {
@@ -26,9 +26,9 @@ import summaryHandler from './handlers/summary';
         MenuIntent: { utterances: ['{get |give |read |}{me |}{the |}{menu|options}'] },
         RecentActivitiesIntent: { utterances: ['{get |give |read |}{me |my |}{recent |}activities'] },
         StatsIntent: { utterances: ['{get |give |read |}{me |my |}{stats|statistics}'] },
-        shouldIIntent: {
+        SuggestIntent: {
             slots: { activityType: 'ACTIVITY_TYPE' },
-            utterances: ['{what |}{should |can }I {-|activityType}{ today|}']
+            utterances: ['{what |}{should |can |am }I {-|activityType}{ today|}']
         },
         SummaryIntent: { utterances: ['{get |give |read |}{me|my |}summary'] }
     };
@@ -43,6 +43,7 @@ import summaryHandler from './handlers/summary';
             MenuIntent: menuHandler,
             RecentActivitiesIntent: recentActivitiesHandler,
             StatsIntent: statsHandler,
+            SuggestIntent: suggestHandler,
             SummaryIntent: summaryHandler
         },
         '/summary': {
@@ -72,7 +73,7 @@ import summaryHandler from './handlers/summary';
             return false;
         }
         console.log('Found valid access token.');
-        console.log('intent:' + request.data.request.intent);
+        console.log('intent:' + request.data.request.intent.name);
         return true;
     }
 

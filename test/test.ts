@@ -1,12 +1,10 @@
-(function() {
-    let lambda = require('../src/index.js');
-    let fs = require('fs');
-    let path = require('path');
+let lambda = require('../src/index.js');
+let fs = require('fs');
 
+(function() {
     let intent = process.argv[2];
     let configFile = fs.readFileSync(__dirname + '/../src/data/strava_config', 'utf8');
     let config = JSON.parse(configFile);
-
 
     let event = {
         "session": {

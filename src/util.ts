@@ -63,7 +63,7 @@ export function validateText(text) {
     return text;
 }
 
-export function getCached(request:any, response:any, category:string, method:string, args?:any, store?:boolean) {
+export function getCached(request:any, response:any, category:string, method:string, args?:any, store?:boolean): any {
     args = args || {};
     const keyArgs = [category, method];
     for (let arg in args) {
