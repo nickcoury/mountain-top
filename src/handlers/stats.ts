@@ -1,10 +1,11 @@
+import { Athlete } from '../types';
 import { getCached, plural, toMiles, toFeet, toTimeSsml, validateText } from '../util';
 
 export default function statsHandler(request, response) {
     console.log('statsHandler');
     let text = '';
 
-    getCached(request, response, 'athlete', 'getAsync', {}, true).then(function (athlete) {
+    getCached(request, response, 'athlete', 'getAsync', {}, true).then(function (athlete: Athlete) {
         return getCached(request, response, 'athletes', 'statsAsync', {id: athlete.id});
     }).then(function (stats) {
         text += statsHelper(stats, 'recent', 'Your totals from the last four weeks:');

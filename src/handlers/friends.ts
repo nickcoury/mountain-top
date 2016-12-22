@@ -1,4 +1,5 @@
 import * as _ from 'lodash';
+import { Activity } from '../types';
 import { getCached, plural, toMiles, toFeet, validateText, pastTense } from '../util';
 
 export default function friendsHandler(request, response) {
@@ -8,7 +9,7 @@ export default function friendsHandler(request, response) {
     getCached(request, response, 'activities', 'listFriendsAsync', {
         page: 0,
         per_page: 20
-    }).then(function (friendActivities) {
+    }).then(function (friendActivities: Activity[]) {
         if (friendActivities && friendActivities.length > 0) {
             text += 'Found ' + friendActivities.length + ' friend activities. ';
 

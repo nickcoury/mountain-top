@@ -1,4 +1,5 @@
 import * as _ from 'lodash';
+import { Activity, Athlete } from '../types';
 import { getCached, getMonday, plural, toMiles, toFeet, toTimeSsml, validateText } from '../util';
 
 export default function summaryHandler(request, response) {
@@ -7,11 +8,11 @@ export default function summaryHandler(request, response) {
     const now = new Date(request.data.request.timestamp);
     now.setHours(now.getHours()-8);
 
-    getCached(request, response, 'athlete', 'getAsync', {}, true).then(function (athlete) {
+    getCached(request, response, 'athlete', 'getAsync', {}, true).then(function (athlete: Athlete) {
         return getCached(request, response, 'athlete', 'listActivitiesAsync', {
             after: getMonday(now, 1).getTime()/1000
         });
-    }).then(function (activities) {
+    }).then(function (activities: Activity[]) {
         const monday = getMonday(now);
         const thisWeek = _.filter(activities, function(activity:any) { return new Date(activity.start_date) >= monday; });
         const lastWeek = _.filter(activities, function(activity:any) { return new Date(activity.start_date) < monday; });

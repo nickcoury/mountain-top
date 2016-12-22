@@ -1,6 +1,6 @@
 import * as _ from 'lodash';
 import * as Promise from 'bluebird';
-import { Athlete } from '../types';
+import { Activity, Athlete } from '../types';
 import { getCached, toFeet, toMiles, toDateSsml, pastTense, plural, validateText } from '../util';
 
 export default function suggestIntent(request, response) {
@@ -10,13 +10,15 @@ export default function suggestIntent(request, response) {
     let date = new Date();
     date.setDate(date.getDate() - 28);
 
-    getCached(request, response, 'athlete', 'getAsync', {}, true).then(function (ath) {
+    getCached(request, response, 'athlete', 'getAsync', {}, true).then(function (ath: Athlete) {
         athlete = ath;
         return Promise.all([
             getCached(request, response, 'athlete', 'listActivitiesAsync', {after: date.getTime()})
         ]);
-    }).then(function (results) {
-        const activities = results[0];
+    }).then(function (results: any[]) {
+        const activities: Activity[] = results[0];
+
+        const result = analyzeActivities(activities);
 
         if (activities && activities.length > 0) {
             text += `Here are your ${activities.length} most recent activities`;
@@ -50,10 +52,14 @@ export default function suggestIntent(request, response) {
             .route('/')
             .send();
     }).catch(function (err) {
-        console.log('Recent Activity Intent Error');
+        console.log('Suggest Activity Intent Error');
         console.log(JSON.stringify(err));
         response.say('There was an error. Please try again.').send();
     });
 
     return false;
+}
+
+function analyzeActivities(activities: Activity[]) {
+    const now = new Date();
 }

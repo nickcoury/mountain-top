@@ -1,4 +1,5 @@
 import * as _ from 'lodash';
+import { Activity } from '../types';
 import { getCached, toFeet, toMiles, toDateSsml, pastTense, plural, validateText } from '../util';
 
 export default function recentActivitiesHandler(request, response) {
@@ -7,7 +8,7 @@ export default function recentActivitiesHandler(request, response) {
     getCached(request, response, 'athlete', 'listActivitiesAsync', {
         page: 0,
         per_page: 10
-    }).then(function (activities) {
+    }).then(function (activities: Activity[]) {
         if (activities && activities.length > 0) {
             text += `Here are your ${activities.length} most recent activities`;
             _(activities)
