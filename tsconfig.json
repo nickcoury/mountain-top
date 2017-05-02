@@ -3,6 +3,7 @@
     "allowJs": true,
     "outDir": "tsDist",
     "module": "commonjs",
+    "moduleResolution": "node",
     "target": "es5"
   },
   "include": [

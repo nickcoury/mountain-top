@@ -19,9 +19,5 @@ Use `node test/test.js <Intent Name>` to run the local test function using mock 
 Use `gulp lambda` to deploy to AWS lambda.  Must have an AWS credentials file in `(User Profile)/.aws/credentials`.
 Use `node util/schema.js` and `node util/utterances.js` to generate Alexa Skills Kit schema and utterances.
 
-## Known issues
-The Windows `gulp-zip` library messes up file execution permissions, so deploying using `gulp` won't work on Windows.
-
 ## Future
-I will be moving `alexa-router` to its own project soon.
 I will be expanding the functionality of this project.

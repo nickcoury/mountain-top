@@ -8,6 +8,7 @@ import { getCached, validateText } from './util';
 
 import friendsHandler from './handlers/friends';
 import recentActivitiesHandler from './handlers/recent';
+import renameHandler from './handlers/rename';
 import statsHandler from './handlers/stats';
 import summaryHandler from './handlers/summary';
 
@@ -23,7 +24,15 @@ import summaryHandler from './handlers/summary';
 
     const intents = {
         FriendsIntent: { utterances: ['{get |give |read |}{me |my |}{friend|friends|friend\'s}{ activities|}'] },
+        MenuIntent: { utterances: ['{get |give |read |}{me |}{the |}{menu|options}'] },
         RecentActivitiesIntent: { utterances: ['{get |give |read |}{me |my |}{recent |}activities'] },
+        RenameIntent: {
+            slots: {
+                ACTIVITY_NAME: 'AMAZON.LITERAL',
+                ACTIVITY_TYPE: 'ACTIVITY_TYPE'
+            },
+            utterances: ['{name|rename} my last {-|ACTIVITY_TYPE} {-|ACTIVITY_NAME}']
+        },
         StatsIntent: { utterances: ['{get |give |read |}{me |my |}{stats|statistics}'] },
         SummaryIntent: { utterances: ['{get |give |read |}{me|my |}summary'] }
     };
@@ -35,7 +44,9 @@ import summaryHandler from './handlers/summary';
             'AMAZON.StartOverIntent': launchHandler,
             'AMAZON.StopIntent': exitHandler,
             FriendsIntent: friendsHandler,
+            MenuIntent: menuHandler,
             RecentActivitiesIntent: recentActivitiesHandler,
+            RenameIntent: renameHandler,
             StatsIntent: statsHandler,
             SummaryIntent: summaryHandler
         },

@@ -1,5 +1,5 @@
 (function() {
-    let lambda = require('../src/index.js')
-        ;
+    let lambda = require('../src/index.ts');
+
     console.log(lambda.alexa.utterances());
 })();
