@@ -3,12 +3,15 @@ import * as Promise from 'bluebird';
 import { Activity, Athlete } from '../types';
 import { getCached, toFeet, toMiles, toDateSsml, pastTense, plural, validateText } from '../util';
 
+const analysisWindowDays = 56;
+const longRunThreshold = .20;
+
 export default function suggestIntent(request, response) {
     let text = '';
     let athlete: Athlete;
 
     let date = new Date();
-    date.setDate(date.getDate() - 28);
+    date.setDate(date.getDate() - analysisWindowDays);
 
     getCached(request, response, 'athlete', 'getAsync', {}, true).then(function (ath: Athlete) {
         athlete = ath;
@@ -20,28 +23,9 @@ export default function suggestIntent(request, response) {
 
         const result = analyzeActivities(activities);
 
-        if (activities && activities.length > 0) {
-            text += `Here are your ${activities.length} most recent activities`;
-            _(activities)
-                .forEach(function (activity) {
-                    const distance = toMiles(activity.distance);
-                    const climbing = toFeet(activity.total_elevation_gain);
-                    const grade = climbing / (distance * 5280);
-                    const date = new Date(activity.start_date);
-                    const dateString = isNaN(date.getTime()) ? '' : ` on ${toDateSsml(date)}`;
-                    const summary = [
-                        `You posted ${activity.name}${dateString}. `,
-                        `${pastTense(activity.type)} ${plural(distance, 'mile')}`,
-                        grade > 0.02 ? ` with ${+climbing.toPrecision(2)} feet of climbing. ` : '. ',
-                        activity.achievement_count === 0 ? '' :
-                            `You earned ${plural(activity.achievement_count, 'achievement')}`
-                    ].join('');
+        text += `<p>You have averaged ${(result.dailyDistance * 7).toFixed(0)} miles a week over the last eight weeks.</p>`;
 
-                    text += '<p>' + summary + '</p>';
-                });
-        } else {
-            text += '<p>No recent activities found. Upload some and check back.</p>';
-        }
+        if ()
 
         return true;
     }).then(function () {
@@ -60,6 +44,38 @@ export default function suggestIntent(request, response) {
     return false;
 }
 
-function analyzeActivities(activities: Activity[]) {
+function analyzeActivities(activities: Activity[]): suggestAnalysis {
+    let result = new suggestAnalysis();
     const now = new Date();
+
+    result.totalDistance = _(activities).map(activity => activity.distance).sum();
+    result.dailyDistance = result.totalDistance / analysisWindowDays;
+
+    result.longRun = _(activities)
+        .filter(activity => activity.distance > (result.dailyDistance * 7 / longRunThreshold))
+        .first();
+
+    return result;
+}
+
+function computeFatigueAt(activity: Activity, atDistance: number, dailyDistance: number, now: Date): number {
+    let fatigue = 0;
+    const totalRecoveryTime = 2 * (activity.distance / dailyDistance) * 24 * 60 * 60 * 1000;
+    const elapsedRecoveryTime =
+        now.getTime() - (new Date(activity.start_date).getTime() + activity.elapsed_time * 1000);
+
+    const amountRecovered = activity.distance * (elapsedRecoveryTime / totalRecoveryTime);
+    const fatigueAtDistance = amountRecovered - atDistance;
+
+    return Math.max(fatigueAtDistance, 0);
+}
+
+class suggestAnalysis {
+    totalDistance: number;
+    dailyDistance: number;
+
+    longRun: Activity;
+
+    cumulativeTrainingFatigue: number;
+    cumulativeLongRunFatigue: number;
 }
